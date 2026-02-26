@@ -1,16 +1,19 @@
 import os
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI
 from pydantic import BaseModel
 from groq import Groq
 
 app = FastAPI()
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 class ChatRequest(BaseModel):
     question: str
 
 @app.get("/")
-def root():
-    return {"status": "ok"}
+def home():
+    return FileResponse("static/index.html")
 
 @app.post("/chat")
 def chat(req: ChatRequest):
