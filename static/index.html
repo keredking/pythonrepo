@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat with AI</title>
+    <style>
+        body {
+            font-family: Arial;
+            max-width: 700px;
+            margin: 50px auto;
+        }
+
+        textarea {
+            width: 100%;
+            height: 120px;
+            font-size: 16px;
+        }
+
+        button {
+            margin-top: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        #output {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f2f2f2;
+            min-height: 50px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+
+<body>
+
+<h1>Chat with AI</h1>
+
+<textarea id="question" placeholder="Ask something..."></textarea>
+
+<br>
+
+<button onclick="sendMessage()">Send</button>
+
+<div id="output"></div>
+
+<script>
+
+async function sendMessage() {
+
+    const question = document.getElementById("question").value;
+
+    const output = document.getElementById("output");
+
+    output.textContent = "Thinking...";
+
+
+    try {
+
+        const response = await fetch("/chat", {
+
+            method: "POST",
+
+            headers: {
+                "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify({
+                question: question
+            })
+
+        });
+
+
+        const data = await response.json();
+
+
+        output.textContent = data.answer;
+
+
+    } catch (error) {
+
+        output.textContent = "Error: " + error;
+
+    }
+
+}
+
+</script>
+
+
+</body>
+</html>
