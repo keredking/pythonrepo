@@ -1,93 +1,134 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-    <title>Chat with AI</title>
-    <style>
-        body {
-            font-family: Arial;
-            max-width: 700px;
-            margin: 50px auto;
-        }
-
-        textarea {
-            width: 100%;
-            height: 120px;
-            font-size: 16px;
-        }
-
-        button {
-            margin-top: 10px;
-            padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
-        }
-
-        #output {
-            margin-top: 20px;
-            padding: 15px;
-            background: #f2f2f2;
-            min-height: 50px;
-            white-space: pre-wrap;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Mini Chat</title>
+  <style>
+    :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    body { margin: 0; background:#0b0f19; color:#e6e8ef; }
+    .wrap { max-width: 820px; margin: 0 auto; padding: 28px 16px 48px; }
+    .card { background: #11182a; border: 1px solid #202a44; border-radius: 16px; padding: 18px; box-shadow: 0 12px 30px rgba(0,0,0,.25); }
+    h1 { margin: 0 0 6px; font-size: 22px; letter-spacing: .2px; }
+    .sub { margin: 0 0 16px; color: #aab2c5; font-size: 13px; }
+    .row { display: flex; gap: 10px; align-items: stretch; }
+    textarea {
+      flex: 1;
+      min-height: 52px;
+      resize: vertical;
+      border-radius: 12px;
+      border: 1px solid #2a3556;
+      background: #0d1322;
+      color: #e6e8ef;
+      padding: 12px;
+      outline: none;
+      font-size: 14px;
+      line-height: 1.35;
+    }
+    button {
+      width: 120px;
+      border-radius: 12px;
+      border: 1px solid #2a3556;
+      background: #1d4ed8;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:disabled { opacity: .55; cursor: not-allowed; }
+    .out {
+      margin-top: 14px;
+      border-radius: 12px;
+      border: 1px solid #2a3556;
+      background: #0d1322;
+      padding: 12px;
+      white-space: pre-wrap;
+      min-height: 56px;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+    .meta { margin-top: 10px; color:#8f98b2; font-size: 12px; display:flex; justify-content: space-between; }
+    .err { color: #ffb4b4; }
+    a { color:#8ab4ff; text-decoration: none; }
+  </style>
 </head>
-
 <body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Chat with AI</h1>
+      <p class="sub">Tiny FastAPI + Groq chat UI (for your assignment).</p>
 
-<h1>Chat with AI</h1>
+      <div class="row">
+        <textarea id="q" placeholder="Ask something… (Shift+Enter for newline)"></textarea>
+        <button id="send">Send</button>
+      </div>
 
-<textarea id="question" placeholder="Ask something..."></textarea>
+      <div id="out" class="out">Ready.</div>
 
-<br>
+      <div class="meta">
+        <span id="status">—</span>
+        <span>API: <a href="/docs" target="_blank" rel="noreferrer">/docs</a></span>
+      </div>
+    </div>
+  </div>
 
-<button onclick="sendMessage()">Send</button>
+  <script>
+    const q = document.getElementById("q");
+    const out = document.getElementById("out");
+    const send = document.getElementById("send");
+    const statusEl = document.getElementById("status");
 
-<div id="output"></div>
-
-<script>
-
-async function sendMessage() {
-
-    const question = document.getElementById("question").value;
-
-    const output = document.getElementById("output");
-
-    output.textContent = "Thinking...";
-
-
-    try {
-
-        const response = await fetch("/chat", {
-
-            method: "POST",
-
-            headers: {
-                "Content-Type": "application/json"
-            },
-
-            body: JSON.stringify({
-                question: question
-            })
-
-        });
-
-
-        const data = await response.json();
-
-
-        output.textContent = data.answer;
-
-
-    } catch (error) {
-
-        output.textContent = "Error: " + error;
-
+    function setStatus(txt, isErr=false){
+      statusEl.textContent = txt;
+      statusEl.className = isErr ? "err" : "";
     }
 
-}
+    async function doSend(){
+      const text = q.value.trim();
+      if(!text) return;
 
-</script>
+      send.disabled = true;
+      out.textContent = "Thinking…";
+      setStatus("Calling /chat…");
 
+      try {
+        const res = await fetch("/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question: text })
+        });
 
+        const data = await res.json();
+
+        if (!res.ok) {
+          out.textContent = JSON.stringify(data, null, 2);
+          setStatus(`Error: HTTP ${res.status}`, true);
+          return;
+        }
+
+        if (data.error) {
+          out.textContent = data.error;
+          setStatus("Server returned an error.", true);
+          return;
+        }
+
+        out.textContent = data.answer ?? JSON.stringify(data, null, 2);
+        setStatus("OK");
+      } catch (e) {
+        out.textContent = String(e);
+        setStatus("Network error.", true);
+      } finally {
+        send.disabled = false;
+      }
+    }
+
+    send.addEventListener("click", doSend);
+
+    q.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        doSend();
+      }
+    });
+  </script>
 </body>
 </html>
